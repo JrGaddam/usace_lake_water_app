@@ -33,7 +33,7 @@ class LakeDataService {
         'imageUrl': imageUrl,
       };
     } else {
-      throw Exception('Failed to load lake data');
+      throw Exception('Failed to load lake data, choose a different lake :(');
     }
   }
 }
