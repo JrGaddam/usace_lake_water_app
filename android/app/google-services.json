@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "745813035451",
+    "project_id": "lake-water-level-widget-app",
+    "storage_bucket": "lake-water-level-widget-app.appspot.com"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:745813035451:android:3476b4336c2f736cce9c9e",
+        "android_client_info": {
+          "package_name": "com.lwwa.app"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyAmEKoSzmF77dZi7bfJFmoEa0brnIEnuxk"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
