@@ -1,14 +1,18 @@
 import 'package:firebase_core/firebase_core.dart';
+import 'package:firebase_database/firebase_database.dart';
 import 'package:flutter/material.dart';
 
 import 'firebase_options.dart';
 import 'lake_data.dart';
+import 'login_page.dart';
+import 'user_profile_page.dart';
+
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
-await Firebase.initializeApp(
-  options: DefaultFirebaseOptions.currentPlatform,
-);
-runApp( MyApp());
+  await Firebase.initializeApp(
+    options: DefaultFirebaseOptions.currentPlatform,
+  );
+  runApp(MyApp());
 }
 
 class MyApp extends StatelessWidget {
@@ -19,17 +23,44 @@ class MyApp extends StatelessWidget {
       theme: ThemeData(
         primarySwatch: Colors.blue,
       ),
-      home: SplashScreen(),
+      home: LoginPage(),
     );
   }
 }
 
 class SplashScreen extends StatefulWidget {
+  final String uid;
+  SplashScreen({required this.uid});
+
   @override
   _SplashScreenState createState() => _SplashScreenState();
 }
 
 class _SplashScreenState extends State<SplashScreen> {
+  String _firstName = '';
+  String _lastName = '';
+
+  @override
+  void initState() {
+    super.initState();
+    _fetchUserData();
+  }
+
+  Future<void> _fetchUserData() async {
+    try {
+      DatabaseEvent event = await FirebaseDatabase.instance.ref().child('users').child(widget.uid).once();
+      if (event.snapshot.value != null) {
+        Map<dynamic, dynamic> userData = event.snapshot.value as Map<dynamic, dynamic>;
+        setState(() {
+          _firstName = userData['firstName'] ?? '';
+          _lastName = userData['lastName'] ?? '';
+        });
+      }
+    } catch (e) {
+      print('Error fetching user data: $e');
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -52,7 +83,7 @@ class _SplashScreenState extends State<SplashScreen> {
               ),
               SizedBox(height: 20),
               Text(
-                'Welcome to USACE Lake Water Level App',
+                'Hello $_firstName $_lastName, welocme to USACE Lake Water Level App',
                 style: TextStyle(fontSize: 24, color: Colors.white, fontWeight: FontWeight.bold),
                 textAlign: TextAlign.center,
               ),
@@ -67,7 +98,7 @@ class _SplashScreenState extends State<SplashScreen> {
                 onPressed: () {
                   Navigator.push(
                     context,
-                    MaterialPageRoute(builder: (context) => LakeSelectionPage()),
+                    MaterialPageRoute(builder: (context) => LakeSelectionPage(uid: widget.uid)),
                   );
                 },
               ),
@@ -79,7 +110,12 @@ class _SplashScreenState extends State<SplashScreen> {
   }
 }
 
+
+
 class LakeSelectionPage extends StatefulWidget {
+  final String uid;
+  LakeSelectionPage({required this.uid});
+
   @override
   _LakeSelectionPageState createState() => _LakeSelectionPageState();
 }
@@ -153,16 +189,21 @@ class _LakeSelectionPageState extends State<LakeSelectionPage> {
             ),
             SizedBox(height: 20),
             ElevatedButton(
-              child: Text('Confirm Selection'),
-              onPressed: selectedLake == null ? null : () {
-                Navigator.pushReplacement(
-                  context,
-                  MaterialPageRoute(builder: (context) => MainAppPage(
-                    selectedLake: selectedLake!,
-                    lakeCode: lakes[selectedLake]!,
-                  )),
-                );
-              },
+              child: Text('View Lake Data'),
+              onPressed: selectedLake != null
+                  ? () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) => MainAppPage(
+                            selectedLake: selectedLake!,
+                            lakeCode: lakes[selectedLake]!,
+                            uid: widget.uid,
+                          ),
+                        ),
+                      );
+                    }
+                  : null,
             ),
           ],
         ),
@@ -170,14 +211,11 @@ class _LakeSelectionPageState extends State<LakeSelectionPage> {
     );
   }
 }
-
-
-
 class MainAppPage extends StatefulWidget {
   final String selectedLake;
   final String lakeCode;
-
-  MainAppPage({required this.selectedLake, required this.lakeCode});
+  final String uid;
+  MainAppPage({required this.selectedLake, required this.lakeCode, required this.uid});
 
   @override
   _MainAppPageState createState() => _MainAppPageState();
@@ -186,11 +224,14 @@ class MainAppPage extends StatefulWidget {
 class _MainAppPageState extends State<MainAppPage> {
   int _selectedIndex = 0;
   Map<String, dynamic> _lakeData = {};
+  String _firstName = '';
+  String _lastName = '';
 
   @override
   void initState() {
     super.initState();
     _fetchLakeData();
+    _fetchUserData();
   }
 
   Future<void> _fetchLakeData() async {
@@ -204,11 +245,31 @@ class _MainAppPageState extends State<MainAppPage> {
     }
   }
 
+  Future<void> _fetchUserData() async {
+    try {
+      DatabaseEvent event = await FirebaseDatabase.instance
+          .ref()
+          .child('users')
+          .child(widget.uid)
+          .once();
+
+      if (event.snapshot.value != null) {
+        Map<dynamic, dynamic> userData = event.snapshot.value as Map<dynamic, dynamic>;
+        setState(() {
+          _firstName = userData['firstName'] ?? '';
+          _lastName = userData['lastName'] ?? '';
+        });
+      }
+    } catch (e) {
+      print('Error fetching user data: $e');
+    }
+  }
+
   List<Widget> _widgetOptions() {
     return <Widget>[
       LakeInfoPage(lakeData: _lakeData, lakeName: widget.selectedLake),
       Text('Search Page'),
-      Text('Profile Page'),
+      UserProfilePage(uid: widget.uid, firstName: _firstName, lastName: _lastName),
     ];
   }
 
@@ -287,5 +348,3 @@ class LakeInfoPage extends StatelessWidget {
     );
   }
 }
-
-
